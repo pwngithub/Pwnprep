@@ -2,6 +2,7 @@
 import streamlit as st
 import pandas as pd
 import re
+import altair as alt
 
 st.set_page_config(page_title="Fiber Prep Dashboard", layout="wide")
 st.title("📊 Fiber Prep Dashboard")
@@ -14,16 +15,13 @@ def extract_drop_size(inventory):
 
 if uploaded_file:
     try:
-        # Load and clean the Excel data
         df = pd.read_excel(uploaded_file, sheet_name=0)
-        df.columns = df.columns.str.strip()  # clean column headers
+        df.columns = df.columns.str.strip()
 
-        # Ensure necessary columns exist
         required_columns = ['Date', 'Tech', 'INVENTORY ITEMS']
         if not all(col in df.columns for col in required_columns):
-            st.error("Missing required columns in the Excel file: 'Date', 'Tech', or 'INVENTORY ITEMS'")
+            st.error("Missing required columns: 'Date', 'Tech', or 'INVENTORY ITEMS'")
         else:
-            # Extract and clean data
             df['Drop Size'] = df['INVENTORY ITEMS'].apply(extract_drop_size)
             df['Date'] = pd.to_datetime(df['Date'], errors='coerce').dt.date
             df['Tech'] = df['Tech'].astype(str).str.strip()
@@ -48,6 +46,55 @@ if uploaded_file:
             st.subheader("Summary by Date, Tech, and Drop Size")
             summary = filtered_df.groupby(['Date', 'Tech', 'Drop Size']).size().reset_index(name='Count')
             st.dataframe(summary)
+
+            st.markdown("---")
+            st.header("📊 Visualizations")
+
+            # 1. Installs over time
+            installs_over_time = filtered_df.groupby('Date').size().reset_index(name='Install Count')
+            chart1 = alt.Chart(installs_over_time).mark_bar().encode(
+                x='Date:T',
+                y='Install Count:Q',
+                tooltip=['Date', 'Install Count']
+            ).properties(title='Installs Over Time')
+            st.altair_chart(chart1, use_container_width=True)
+
+            # 2. Installs per Technician
+            installs_per_tech = filtered_df.groupby('Tech').size().reset_index(name='Install Count')
+            chart2 = alt.Chart(installs_per_tech).mark_bar().encode(
+                x='Tech:N',
+                y='Install Count:Q',
+                tooltip=['Tech', 'Install Count']
+            ).properties(title='Installs per Technician')
+            st.altair_chart(chart2, use_container_width=True)
+
+            # 3. Drop Size Distribution
+            drop_dist = filtered_df['Drop Size'].value_counts().reset_index()
+            drop_dist.columns = ['Drop Size', 'Count']
+            chart3 = alt.Chart(drop_dist).mark_bar().encode(
+                x='Drop Size:N',
+                y='Count:Q',
+                tooltip=['Drop Size', 'Count']
+            ).properties(title='Drop Size Distribution')
+            st.altair_chart(chart3, use_container_width=True)
+
+            # 4. Stacked bar: Drop Size per Tech
+            stacked_df = filtered_df.groupby(['Tech', 'Drop Size']).size().reset_index(name='Count')
+            chart4 = alt.Chart(stacked_df).mark_bar().encode(
+                x='Tech:N',
+                y='Count:Q',
+                color='Drop Size:N',
+                tooltip=['Tech', 'Drop Size', 'Count']
+            ).properties(title='Drop Size by Technician')
+            st.altair_chart(chart4, use_container_width=True)
+
+            # 5. Line chart: Install trend over time
+            line_chart = alt.Chart(installs_over_time).mark_line(point=True).encode(
+                x='Date:T',
+                y='Install Count:Q',
+                tooltip=['Date', 'Install Count']
+            ).properties(title='Install Trend Over Time')
+            st.altair_chart(line_chart, use_container_width=True)
 
     except Exception as e:
         st.error(f"Error processing file: {e}")
