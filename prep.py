@@ -4,13 +4,15 @@ import pandas as pd
 import re
 import altair as alt
 from pathlib import Path
+import os
 
 st.set_page_config(page_title="Fiber Prep Dashboard", layout="wide")
 st.title("📊 Fiber Prep Dashboard")
 
-# Create shared directory
+# Ensure shared directory exists and log its path
 shared_dir = Path("shared_files")
-shared_dir.mkdir(exist_ok=True)
+shared_dir.mkdir(parents=True, exist_ok=True)
+st.sidebar.info(f"Shared file directory: {shared_dir.resolve()}")
 
 def extract_drop_size(inventory):
     match = re.search(r"(\d{2,4})['’]\s?Drop", str(inventory))
@@ -22,7 +24,8 @@ if uploaded_file:
     save_path = shared_dir / uploaded_file.name
     with open(save_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
-    st.success(f"File saved as: {uploaded_file.name}")
+    st.success(f"✅ File saved as: {uploaded_file.name}")
+    st.write(f"Full path: {save_path.resolve()}")
 
 # File selector
 st.sidebar.header("📂 Select a Shared File")
