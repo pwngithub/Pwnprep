@@ -3,19 +3,35 @@ import streamlit as st
 import pandas as pd
 import re
 import altair as alt
+from pathlib import Path
 
 st.set_page_config(page_title="Fiber Prep Dashboard", layout="wide")
 st.title("📊 Fiber Prep Dashboard")
 
-uploaded_file = st.file_uploader("Upload your Excel file (.xlsx, .xlsm)", type=["xlsx", "xlsm"])
+# Create shared directory
+shared_dir = Path("shared_files")
+shared_dir.mkdir(exist_ok=True)
 
 def extract_drop_size(inventory):
     match = re.search(r"(\d{2,4})['’]\s?Drop", str(inventory))
     return match.group(1) + "'" if match else "Unknown"
 
+# Upload and save
+uploaded_file = st.file_uploader("Upload your Excel file to share (.xlsx, .xlsm)", type=["xlsx", "xlsm"])
 if uploaded_file:
+    save_path = shared_dir / uploaded_file.name
+    with open(save_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
+    st.success(f"File saved as: {uploaded_file.name}")
+
+# File selector
+st.sidebar.header("📂 Select a Shared File")
+excel_files = sorted([f.name for f in shared_dir.glob("*.xls*")])
+selected_file = st.sidebar.selectbox("Choose a file to analyze", excel_files)
+
+if selected_file:
     try:
-        df = pd.read_excel(uploaded_file, sheet_name=0)
+        df = pd.read_excel(shared_dir / selected_file, sheet_name=0)
         df.columns = df.columns.str.strip()
 
         required_columns = ['Date', 'Tech', 'INVENTORY ITEMS']
@@ -27,7 +43,7 @@ if uploaded_file:
             df['Tech'] = df['Tech'].astype(str).str.strip()
 
             # Sidebar filters
-            st.sidebar.header("Filter Data")
+            st.sidebar.header("🔍 Filter Data")
             selected_dates = st.sidebar.multiselect("Select Date(s)", sorted(df['Date'].dropna().unique()))
             selected_techs = st.sidebar.multiselect("Select Tech(s)", sorted(df['Tech'].dropna().unique()))
             selected_drops = st.sidebar.multiselect("Select Drop Size(s)", sorted(df['Drop Size'].dropna().unique()))
@@ -40,10 +56,10 @@ if uploaded_file:
             if selected_drops:
                 filtered_df = filtered_df[filtered_df['Drop Size'].isin(selected_drops)]
 
-            st.subheader("Filtered Results")
+            st.subheader("📋 Filtered Results")
             st.dataframe(filtered_df, use_container_width=True)
 
-            st.subheader("Summary by Date, Tech, and Drop Size")
+            st.subheader("📌 Summary by Date, Tech, and Drop Size")
             summary = filtered_df.groupby(['Date', 'Tech', 'Drop Size']).size().reset_index(name='Count')
             st.dataframe(summary)
 
@@ -98,5 +114,3 @@ if uploaded_file:
 
     except Exception as e:
         st.error(f"Error processing file: {e}")
-else:
-    st.info("Upload an Excel file to begin.")
