@@ -69,22 +69,22 @@ if selected_file:
             st.markdown("---")
             st.header("📊 Visualizations")
 
-            # 1. Installs over time
-            installs_over_time = filtered_df.groupby('Date').size().reset_index(name='Install Count')
-            chart1 = alt.Chart(installs_over_time).mark_bar().encode(
+            # 1. Preps over time
+            preps_over_time = filtered_df.groupby('Date').size().reset_index(name='Prep Count')
+            chart1 = alt.Chart(preps_over_time).mark_bar().encode(
                 x='Date:T',
-                y='Install Count:Q',
-                tooltip=['Date', 'Install Count']
-            ).properties(title='Installs Over Time')
+                y='Prep Count:Q',
+                tooltip=['Date', 'Prep Count']
+            ).properties(title='Preps Over Time')
             st.altair_chart(chart1, use_container_width=True)
 
-            # 2. Installs per Technician
-            installs_per_tech = filtered_df.groupby('Tech').size().reset_index(name='Install Count')
-            chart2 = alt.Chart(installs_per_tech).mark_bar().encode(
+            # 2. Preps per Technician
+            preps_per_tech = filtered_df.groupby('Tech').size().reset_index(name='Prep Count')
+            chart2 = alt.Chart(preps_per_tech).mark_bar().encode(
                 x='Tech:N',
-                y='Install Count:Q',
-                tooltip=['Tech', 'Install Count']
-            ).properties(title='Installs per Technician')
+                y='Prep Count:Q',
+                tooltip=['Tech', 'Prep Count']
+            ).properties(title='Preps per Technician')
             st.altair_chart(chart2, use_container_width=True)
 
             # 3. Drop Size Distribution
@@ -107,12 +107,12 @@ if selected_file:
             ).properties(title='Drop Size by Technician')
             st.altair_chart(chart4, use_container_width=True)
 
-            # 5. Line chart: Install trend over time
-            line_chart = alt.Chart(installs_over_time).mark_line(point=True).encode(
+            # 5. Line chart: Prep trend over time
+            line_chart = alt.Chart(preps_over_time).mark_line(point=True).encode(
                 x='Date:T',
-                y='Install Count:Q',
-                tooltip=['Date', 'Install Count']
-            ).properties(title='Install Trend Over Time')
+                y='Prep Count:Q',
+                tooltip=['Date', 'Prep Count']
+            ).properties(title='Prep Trend Over Time')
             st.altair_chart(line_chart, use_container_width=True)
 
     except Exception as e:
